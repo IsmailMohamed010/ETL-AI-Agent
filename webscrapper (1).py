@@ -8,18 +8,13 @@ import logging
 from urllib.parse import urljoin
 
 
-# -----------------------------
-# Logging configuration
-# -----------------------------
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
 
 
-# -----------------------------
-# Create Selenium driver
-# -----------------------------
 def create_driver():
     options = Options()
     options.add_argument("--headless")  
@@ -32,9 +27,7 @@ def create_driver():
     return driver
 
 
-# -----------------------------
-# Scrape a single page
-# -----------------------------
+
 def scrape_page(url, parent_tag, parent_class, fields, timeout=10):
 
     driver = create_driver()
@@ -80,9 +73,7 @@ def scrape_page(url, parent_tag, parent_class, fields, timeout=10):
     return pd.DataFrame(rows)
 
 
-# -----------------------------
-# Pagination wrapper
-# -----------------------------
+
 def scrape_with_pagination(start_page, end_page, parent_tag, parent_class, fields):
 
     all_pages = []
@@ -112,9 +103,7 @@ def scrape_with_pagination(start_page, end_page, parent_tag, parent_class, field
     return pd.concat(all_pages, ignore_index=True)
 
 
-# -----------------------------
-# MAIN AGENT FUNCTION
-# -----------------------------
+
 def extract_data(config):
 
     parent_tag = config["parent_tag"]
@@ -140,9 +129,7 @@ def extract_data(config):
     return df
 
 
-# --------------------------------------------------------
-# RUN EXAMPLE
-# --------------------------------------------------------
+
 if __name__ == "__main__":
     config = {
         "pagination": {
@@ -162,3 +149,4 @@ if __name__ == "__main__":
 
     df = extract_data(config)
     print(df.head())
+
