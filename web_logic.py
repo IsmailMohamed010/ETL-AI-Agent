@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 
 
-# --- Create Selenium driver ---
+
 def create_driver():
     options = Options()
     options.add_argument("--headless")
@@ -106,19 +106,19 @@ def extract_from_web(state, wait_selector=None, infinite_scroll=False):
     }
 
 
-# --- Save CSV ---
+
 def save_extracted_result(data):
     df = pd.DataFrame(data)
     df.to_csv("web_results.csv", index=False, encoding="utf-8")
     print("Saved CSV → web_results.csv")
 
 
-# --- Save SQLite DB ---
+
 def save_extracted_result_db(data):
     conn = sqlite3.connect("web_results.db")
     cursor = conn.cursor()
 
-    # Create table if not exists
+    
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,7 +127,7 @@ def save_extracted_result_db(data):
         )
     """)
 
-    # Insert each page
+    
     cursor.executemany("""
         INSERT INTO results (url, content)
         VALUES (:url, :content)
