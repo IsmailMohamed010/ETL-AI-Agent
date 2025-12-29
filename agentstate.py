@@ -23,6 +23,6 @@ class WebAgentState(TypedDict, total=False):
     config: AgentConfig
 
     # outputs
-    extracted_data: list[dict]      # list of {"url":..., "content":...}
+    extracted_data: list[dict]     
     errors: list[str]
-    status: str                     # "init" | "running" | "done" | "failed"
+    status: str                   
