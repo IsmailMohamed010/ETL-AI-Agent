@@ -1,10 +1,11 @@
-from agentstate import AgentState
-from web_logic import extract_from_web, save_extracted_result, save_extracted_result_db
+from graph import build_graph
+from agentstate import WebAgentState
 
 if __name__ == "__main__":
 
-    # --- Define scraping state ---
-    state = {
+    app = build_graph()
+
+    initial_state: WebAgentState = {
         "urls": [
             {
                 "url": "https://books.toscrape.com/catalogue/page-{}.html",
@@ -16,25 +17,20 @@ if __name__ == "__main__":
                 "enabled": True,
                 "start": 1,
                 "end": 3
-            }
-        }
+            },
+            "wait_selector": None,
+            "infinite_scroll": False,
+            "save_csv": True,
+            "save_db": True
+        },
+        "extracted_data": [],
+        "errors": [],
+        "status": "init"
     }
 
-    
-    wait_selector = None  
-   
-    infinite_scroll = False
+    final_state = app.invoke(initial_state)
 
-   
-    result = extract_from_web(
-        state,
-        wait_selector=wait_selector,
-        infinite_scroll=infinite_scroll
-    )
-
-  
-    save_extracted_result(result["extracted_data"])
-
-  
-    save_extracted_result_db(result["extracted_data"])
-
+    print("\n=== AGENT FINISHED ===")
+    print("Status:", final_state.get("status"))
+    print("Pages scraped:", len(final_state.get("extracted_data", [])))
+    print("Errors:", final_state.get("errors", []))
