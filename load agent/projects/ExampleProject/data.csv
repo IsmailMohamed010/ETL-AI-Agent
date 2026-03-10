@@ -1,0 +1,11 @@
+id,name,category,price,quantity
+1,Laptop,Electronics,25000,5
+2,Phone,Electronics,15000,10
+3,Chair,Furniture,1200,20
+4,Desk,Furniture,3500,7
+5,Headphones,Electronics,800,15
+6,Mouse,Electronics,400,25
+7,Keyboard,Electronics,900,18
+8,Monitor,Electronics,7000,6
+9,Tablet,Electronics,11000,9
+10,Printer,Electronics,4500,4
