@@ -1,28 +1,32 @@
-from typing import Annotated, Any, Optional
+# agentstate.py
+"""
+agentstate.py
+-------------
+Shared state schema for the Web Extraction Agent.
+"""
+
+from typing import Optional
 from typing_extensions import TypedDict
 
-class WebMeta(TypedDict):
-    url: str
-    doc_type: str  # "html" | "pdf" | "json" etc.
-
-class PaginationConfig(TypedDict):
-    enabled: bool
-    start: int
-    end: int
 
 class AgentConfig(TypedDict):
-    pagination: PaginationConfig
-    wait_selector: Optional[str]
+    save_csv:        bool
+    save_db:         bool
+    wait_selector:   Optional[str]
     infinite_scroll: bool
-    save_csv: bool
-    save_db: bool
+
 
 class WebAgentState(TypedDict, total=False):
-    # inputs
-    urls: Annotated[list[WebMeta], "web"]
+    # ── User inputs ───────────────────────────────────────────
+    url:          str            # Single website URL to scrape
+    search_query: str            # What to look for / extract (e.g. "product prices and names")
+
+    # ── Config ────────────────────────────────────────────────
     config: AgentConfig
 
-    # outputs
-    extracted_data: list[dict]     
-    errors: list[str]
-    status: str                   
+    # ── Pipeline outputs ──────────────────────────────────────
+    raw_content:    str          # Raw text scraped from the page
+    extracted_json: list[dict]   # LLM-parsed JSON
+    parsed_rows:    list[dict]   # Flattened rows ready for CSV/DB
+    errors:         list[str]
+    status:         str          # "init" | "running" | "failed" | "done"
