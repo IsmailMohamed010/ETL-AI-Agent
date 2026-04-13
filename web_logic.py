@@ -1,139 +1,206 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
-import pandas as pd
-import time
+# web_logic.py
+"""
+web_logic.py
+------------
+Playwright-based scraper + CSV/SQLite save helpers.
+"""
+
 import logging
+import os
+import re
 import sqlite3
-import random
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
-)
+import pandas as pd
+from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
+logger = logging.getLogger(__name__)
 
-
-def create_driver():
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("user-agent=Mozilla/5.0")
-    driver = webdriver.Chrome(options=options)
-    return driver
+_SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_DIR = os.path.dirname(_SCRIPT_DIR)
+_OUTPUT_DIR  = os.path.join(_PROJECT_DIR, "output")
 
 
+# ── Scroll helper ──────────────────────────────────────────────────────────────
 
-def scrap_pagination(base_url, start_page, end_page, wait_selector=None, infinite_scroll=False):
-    """
-    base_url: URL with {} for page numbers
-    wait_selector: CSS selector to wait for JS-loaded content
-    infinite_scroll: if True, scrolls to bottom to load all content
-    """
-    pages = []
-    driver = create_driver()
-    total_pages = end_page - start_page + 1
+def _scroll_to_bottom_playwright(page, pause_ms: int = 2000) -> None:
+    last_height = page.evaluate("document.body.scrollHeight")
+    while True:
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        page.wait_for_timeout(pause_ms)
+        new_height = page.evaluate("document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
 
-    for idx, page in enumerate(range(start_page, end_page + 1), start=1):
-        url = base_url.format(page)
-        logging.info(f"Scraping page {idx} of {total_pages}: {url}")
-        driver.get(url)
 
-        
-        if wait_selector:
+# ── HTML → clean text ──────────────────────────────────────────────────────────
+
+def _html_to_text(html: str) -> str:
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Step 1: replace truncated <a> text with full title attribute
+    for a_tag in soup.find_all("a", title=True):
+        full_title = a_tag["title"].strip()
+        if full_title:
+            a_tag.string = full_title
+
+    # Step 2: replace <img> with alt text
+    for img in soup.find_all("img", alt=True):
+        alt_text = img["alt"].strip()
+        if alt_text:
+            img.replace_with(alt_text)
+
+    # Step 3: strip boilerplate
+    for tag in soup(["script", "style", "nav", "footer", "header"]):
+        tag.decompose()
+
+    text = soup.get_text(separator="\n", strip=True)
+
+    # Step 4: strip Wikipedia-style footnote markers: [a], [b], [1], [note 1]
+    text = re.sub(r'\[[a-zA-Z0-9 ]{1,10}\]', '', text)
+
+    return text
+
+
+# ── Output helpers ─────────────────────────────────────────────────────────────
+
+def _ensure_output_dir() -> None:
+    os.makedirs(_OUTPUT_DIR, exist_ok=True)
+
+
+def _resolve_path(filename: str) -> str:
+    return os.path.join(_OUTPUT_DIR, filename)
+
+
+# ── Main scrape ────────────────────────────────────────────────────────────────
+
+def scrape_page(
+    url: str,
+    wait_selector: str | None = None,
+    infinite_scroll: bool = False,
+) -> str:
+    """Scrape a single URL using Playwright. Returns clean plain text."""
+    with sync_playwright() as p:
+        # Initialize to None so finally block is safe even if launch() fails
+        browser = None
+        try:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0 Safari/537.36"
+                ),
+                viewport={"width": 1920, "height": 1080},
+                extra_http_headers={
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Accept-Encoding": "gzip, deflate, br",
+                },
+            )
+            page = context.new_page()
+            page.add_init_script(
+                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+            )
+
+            logger.info("Scraping: %s", url)
+
+            # domcontentloaded is fast and reliable.
+            # networkidle attempted as best-effort — many real sites never settle.
+            page.goto(url, wait_until="domcontentloaded", timeout=30000)
             try:
-                WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, wait_selector))
+                page.wait_for_load_state("networkidle", timeout=8000)
+            except PlaywrightTimeout:
+                logger.info("networkidle not reached — continuing with domcontentloaded.")
+
+            if wait_selector:
+                try:
+                    page.wait_for_selector(wait_selector, timeout=10000)
+                except PlaywrightTimeout:
+                    logger.warning("Timeout: element '%s' not found within 10s", wait_selector)
+
+            if infinite_scroll:
+                _scroll_to_bottom_playwright(page)
+
+            page.wait_for_timeout(500)
+            html = page.content()
+            text = _html_to_text(html)
+            logger.info("Scraped %d characters.", len(text))
+            return text
+
+        finally:
+            if browser:
+                browser.close()
+
+
+# ── Save to CSV ────────────────────────────────────────────────────────────────
+
+def save_to_csv(rows: list[dict], path: str = "") -> None:
+    _ensure_output_dir()
+    out = path if os.path.isabs(path) else _resolve_path(path or "results.csv")
+
+    df = pd.DataFrame(rows)
+
+    # Clean float columns that are whole numbers (e.g. 1425423212.0 → 1425423212)
+    for col in df.columns:
+        if df[col].dtype == float:
+            if df[col].dropna().apply(lambda x: x == int(x)).all():
+                df[col] = df[col].fillna("").apply(
+                    lambda x: str(int(x)) if x != "" else ""
                 )
-            except:
-                logging.warning(f"Waited 10s, element '{wait_selector}' not found on {url}")
 
-       
-        if infinite_scroll:
-            SCROLL_PAUSE_TIME = 2
-            last_height = driver.execute_script("return document.body.scrollHeight")
-            while True:
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(SCROLL_PAUSE_TIME)
-                new_height = driver.execute_script("return document.body.scrollHeight")
-                if new_height == last_height:
-                    break
-                last_height = new_height
-
-        html = driver.page_source
-        soup = BeautifulSoup(html, "html.parser")
-
-        
-        for s in soup(["script", "style"]):
-            s.extract()
-
-        
-        text = soup.get_text(separator="\n", strip=True)
-
-        pages.append({
-            "url": url,
-            "content": text
-        })
-
-        # Random delay between pages to avoid anti-bot detection
-        time.sleep(random.uniform(1, 3))
-
-    driver.quit()
-    return pd.DataFrame(pages)
+    df.to_csv(out, index=False, encoding="utf-8-sig")
+    logger.info("Saved CSV → %s  (%d rows)", out, len(rows))
+    print(f"  📄  CSV  → {out}")
 
 
+# ── Save to SQLite ─────────────────────────────────────────────────────────────
 
-def extract_from_web(state, wait_selector=None, infinite_scroll=False):
-    config = state["config"]
-    base_url = state["urls"][0]["url"]
-    p = config["pagination"]
-
-    df = scrap_pagination(
-        base_url=base_url,
-        start_page=p["start"],
-        end_page=p["end"],
-        wait_selector=wait_selector,
-        infinite_scroll=infinite_scroll
+def _get_existing_columns(cur: sqlite3.Cursor, table: str) -> list[str]:
+    cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,)
     )
-
-    return {
-        "extracted_data": df.to_dict(orient="records")
-    }
-
-
-
-def save_extracted_result(data):
-    df = pd.DataFrame(data)
-    df.to_csv("web_results.csv", index=False, encoding="utf-8")
-    print("Saved CSV → web_results.csv")
+    if not cur.fetchone():
+        return []
+    cur.execute(f"PRAGMA table_info({table})")
+    return [row[1] for row in cur.fetchall() if row[1] != "id"]
 
 
+def save_to_db(rows: list[dict], db_path: str = "") -> None:
+    if not rows:
+        logger.warning("No rows to save to DB.")
+        return
+    _ensure_output_dir()
+    out = db_path if os.path.isabs(db_path) else _resolve_path(db_path or "results.db")
 
-def save_extracted_result_db(data):
-    conn = sqlite3.connect("web_results.db")
-    cursor = conn.cursor()
+    conn = sqlite3.connect(out)
+    cur  = conn.cursor()
 
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS results (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            url TEXT,
-            content TEXT
-        )
-    """)
+    new_cols      = list(rows[0].keys())
+    existing_cols = _get_existing_columns(cur, "results")
 
-    
-    cursor.executemany("""
-        INSERT INTO results (url, content)
-        VALUES (:url, :content)
-    """, data)
+    if existing_cols and set(existing_cols) != set(new_cols):
+        logger.warning("DB schema changed — dropping old table.")
+        cur.execute("DROP TABLE results")
+        existing_cols = []
+
+    if not existing_cols:
+        col_defs = ", ".join(f'"{c}" TEXT' for c in new_cols)
+        cur.execute(f"""
+            CREATE TABLE results (
+                id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                {col_defs}
+            )
+        """)
+
+    placeholders = ", ".join("?" * len(new_cols))
+    col_names    = ", ".join(f'"{c}"' for c in new_cols)
+    cur.executemany(
+        f"INSERT INTO results ({col_names}) VALUES ({placeholders})",
+        [tuple(str(r.get(c, "")) for c in new_cols) for r in rows],
+    )
 
     conn.commit()
     conn.close()
-    print("Saved to Database → web_results.db")
-
+    logger.info("Saved DB  → %s  (%d rows)", out, len(rows))
+    print(f"  🗄️   DB   → {out}")
