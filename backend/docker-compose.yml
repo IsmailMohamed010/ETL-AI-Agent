@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend
+  api:
+    build: .
+    container_name: etl-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=sqlite:///./etl_pipeline.db
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - ./uploads:/app/uploads
+      - ./database:/app/database
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - etl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: PostgreSQL Database (uncomment for production)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: etl-postgres
+  #   environment:
+  #     POSTGRES_USER: etl_user
+  #     POSTGRES_PASSWORD: etl_password
+  #     POSTGRES_DB: etl_db
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     - etl-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U etl_user -d etl_db"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Optional: pgAdmin for database management (uncomment for development)
+  # pgadmin:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: etl-pgadmin
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #   ports:
+  #     - "5050:80"
+  #   networks:
+  #     - etl-network
+  #   depends_on:
+  #     - postgres
+
+networks:
+  etl-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

@@ -21,7 +21,7 @@ def save_relations_node(state: AgentState) -> AgentState:
     return state
 
 # ── Load all files from uploads folder ──────────────────────────────────────
-uploads_dir = r"F:\Grad Project\uploads"
+uploads_dir = r"C:\Users\Ahmed\ETL-AI-Agent\web\uploads"
 
 files = [
     {"file_path": os.path.join(uploads_dir, f), "doc_type": "file"}

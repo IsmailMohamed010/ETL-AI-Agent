@@ -1,0 +1,112 @@
+{
+  "job-A9E0E2F7": {
+    "id": "job-A9E0E2F7",
+    "user_id": "b4502766-da52-4853-bc07-e44785b81cc4",
+    "sources": [
+      "files"
+    ],
+    "description": "i neeed to anlsis this data and make charts",
+    "payloads": {
+      "files": {
+        "count": 1,
+        "descriptions": [
+          ""
+        ]
+      }
+    },
+    "status": "done",
+    "created_at": "2026-05-03T14:56:19.317492",
+    "message": "Pipeline complete.",
+    "uploaded_files": [
+      "C:\\Users\\Ahmed\\ETL-AI-Agent\\web\\uploads\\job-A9E0E2F7_131c51_developers.csv"
+    ]
+  },
+  "job-D588B4EB": {
+    "id": "job-D588B4EB",
+    "user_id": "b4502766-da52-4853-bc07-e44785b81cc4",
+    "sources": [
+      "scrape"
+    ],
+    "description": "i neeed to anlsis this data and make charts",
+    "payloads": {
+      "scrape": {
+        "urls": [
+          "https://books.toscrape.com/"
+        ],
+        "hints": [
+          ""
+        ]
+      }
+    },
+    "status": "done",
+    "created_at": "2026-05-03T14:58:29.571626",
+    "message": "Pipeline complete.",
+    "uploaded_files": []
+  },
+  "job-742BE427": {
+    "id": "job-742BE427",
+    "user_id": "e37fad0e-9d02-4ba6-b824-3aee851c94ae",
+    "sources": [
+      "files"
+    ],
+    "description": "i neeed to anlsis this data and make charts",
+    "payloads": {
+      "files": {
+        "count": 1,
+        "descriptions": [
+          ""
+        ]
+      }
+    },
+    "status": "done",
+    "created_at": "2026-05-03T15:09:52.052222",
+    "message": "Pipeline complete.",
+    "uploaded_files": [
+      "C:\\Users\\Ahmed\\ETL-AI-Agent\\web\\uploads\\job-742BE427_a33efb_dub projects.csv"
+    ]
+  },
+  "job-0C7736E2": {
+    "id": "job-0C7736E2",
+    "user_id": "d7daecc9-dbf3-4e9f-93ca-412bb2e731f2",
+    "sources": [
+      "files"
+    ],
+    "description": "sdlvposdkovmsdkomvkosdmkvmsdko",
+    "payloads": {
+      "files": {
+        "count": 1,
+        "descriptions": [
+          ""
+        ]
+      }
+    },
+    "status": "done",
+    "created_at": "2026-05-03T15:37:49.705430",
+    "message": "Pipeline complete.",
+    "uploaded_files": [
+      "C:\\Users\\Ahmed\\ETL-AI-Agent\\web\\uploads\\job-0C7736E2_6eb2bc_dub projects.csv"
+    ]
+  },
+  "job-8B3A9F72": {
+    "id": "job-8B3A9F72",
+    "user_id": "d7daecc9-dbf3-4e9f-93ca-412bb2e731f2",
+    "sources": [
+      "files"
+    ],
+    "description": "\u064a\u0633\u0624\u0633\u064a\u0624\u0633\u064a\u0624\u0633\u064a\u0624\u0633\u064a\u0624\u0633\u064a\u0624\u0633\u064a\u0624\u0633\u064a",
+    "payloads": {
+      "files": {
+        "count": 1,
+        "descriptions": [
+          ""
+        ]
+      }
+    },
+    "status": "done",
+    "created_at": "2026-05-03T15:46:23.380949",
+    "message": "Pipeline complete.",
+    "uploaded_files": [
+      "C:\\Users\\Ahmed\\ETL-AI-Agent\\web\\uploads\\job-8B3A9F72_dbc721_developers.csv"
+    ]
+  }
+}

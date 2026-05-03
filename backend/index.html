@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETL Pipeline UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input[type="file"],
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-group input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #555;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-processing {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .status-completed {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .result-section {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-item h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .result-item pre {
+            background: white;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #842029;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #f5c2c7;
+        }
+
+        .success-message {
+            background: #d1e7dd;
+            color: #0f5132;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #badbcc;
+        }
+
+        .info-message {
+            background: #cfe2ff;
+            color: #084298;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #b6d4fe;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            font-size: 13px;
+        }
+
+        .secondary-btn {
+            background: #6c757d;
+        }
+
+        .secondary-btn:hover {
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 ETL Pipeline Dashboard</h1>
+            <p>Automated Data Extraction, Transformation, and Loading System</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="card">
+                <h2>📤 Upload Files</h2>
+                
+                <div class="form-group">
+                    <label>Select Files (CSV, XLSX, XLS)</label>
+                    <input type="file" id="fileInput" multiple accept=".csv,.xlsx,.xls">
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="detectRelationships" checked>
+                        Detect Relationships
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="saveToDatabase" checked>
+                        Save to Database
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="saveToCsv" checked>
+                        Save to CSV
+                    </label>
+                </div>
+
+                <button onclick="uploadFiles()">Upload & Process</button>
+            </div>
+
+            <!-- Status Section -->
+            <div class="card">
+                <h2>📊 Processing Status</h2>
+                
+                <div id="statusContainer" style="display: none;">
+                    <div id="statusBadge" class="status-badge"></div>
+                    
+                    <div class="stat-item">
+                        <span class="stat-label">Job ID:</span>
+                        <span class="stat-value" id="jobId" style="font-size: 12px; font-family: monospace;">-</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <span class="stat-label">Progress:</span>
+                        <span class="stat-value" id="progressPercent">0%</span>
+                    </div>
+
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                    </div>
+
+                    <div class="stat-item">
+                        <span class="stat-label">Records Extracted:</span>
+                        <span class="stat-value" id="recordCount">0</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <span class="stat-label">Status Message:</span>
+                        <span class="stat-value" id="statusMessage" style="font-size: 12px; text-align: right;"></span>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="secondary-btn" onclick="copyJobId()">Copy Job ID</button>
+                        <button class="secondary-btn" onclick="cancelJob()">Cancel Job</button>
+                    </div>
+                </div>
+
+                <div id="noStatusContainer">
+                    <p style="color: #999; text-align: center; padding: 20px;">No job in progress</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="card" style="margin-top: 20px;">
+            <h2>📋 Results</h2>
+            
+            <div id="resultsContainer">
+                <div id="messagesContainer"></div>
+                <div id="resultsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1';
+        let currentJobId = null;
+        let statusCheckInterval = null;
+
+        // Upload files and start processing
+        async function uploadFiles() {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+
+            if (files.length === 0) {
+                showMessage('Please select at least one file', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            
+            for (let file of files) {
+                formData.append('files', file);
+            }
+
+            formData.append('detect_relationships', document.getElementById('detectRelationships').checked);
+            formData.append('save_to_database', document.getElementById('saveToDatabase').checked);
+            formData.append('save_to_csv', document.getElementById('saveToCsv').checked);
+
+            try {
+                showMessage('Uploading files...', 'info');
+                
+                const response = await fetch(
+                    `${API_URL}/extraction/upload-and-process`,
+                    {
+                        method: 'POST',
+                        body: formData
+                    }
+                );
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                currentJobId = data.job_id;
+
+                showMessage(`Job created: ${data.message}`, 'success');
+                updateStatusDisplay();
+                
+                // Start polling for status
+                startStatusCheck();
+                
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Check job status
+        async function checkJobStatus() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(
+                    `${API_URL}/extraction/jobs/${currentJobId}/status`
+                );
+
+                if (!response.ok) {
+                    stopStatusCheck();
+                    return;
+                }
+
+                const data = await response.json();
+                updateStatusDisplay(data);
+
+                // If completed, fetch results
+                if (data.status === 'completed') {
+                    stopStatusCheck();
+                    fetchResults();
+                } else if (data.status === 'failed') {
+                    stopStatusCheck();
+                    showMessage(`Job failed: ${data.message}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('Status check error:', error);
+            }
+        }
+
+        // Fetch and display results
+        async function fetchResults() {
+            try {
+                const response = await fetch(
+                    `${API_URL}/extraction/jobs/${currentJobId}/result`
+                );
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Error fetching results:', error);
+            }
+        }
+
+        // Update status display
+        function updateStatusDisplay(data = null) {
+            const statusContainer = document.getElementById('statusContainer');
+            const noStatusContainer = document.getElementById('noStatusContainer');
+
+            if (currentJobId) {
+                statusContainer.style.display = 'block';
+                noStatusContainer.style.display = 'none';
+
+                if (data) {
+                    document.getElementById('jobId').textContent = currentJobId.substring(0, 8) + '...';
+                    document.getElementById('progressPercent').textContent = data.progress + '%';
+                    document.getElementById('progressBar').style.width = data.progress + '%';
+                    document.getElementById('statusMessage').textContent = data.status;
+
+                    const badge = document.getElementById('statusBadge');
+                    badge.textContent = data.status.toUpperCase();
+                    badge.className = 'status-badge status-' + data.status;
+                }
+            } else {
+                statusContainer.style.display = 'none';
+                noStatusContainer.style.display = 'block';
+            }
+        }
+
+        // Display results
+        function displayResults(data) {
+            const resultsContent = document.getElementById('resultsContent');
+            let html = '';
+
+            if (data.extracted_data) {
+                html += '<div class="result-item">';
+                html += '<h4>📊 Extracted Data</h4>';
+                html += '<pre>' + JSON.stringify(data.extracted_data, null, 2).substring(0, 500) + '...</pre>';
+                html += '</div>';
+            }
+
+            if (data.detected_relationships && Object.keys(data.detected_relationships).length > 0) {
+                html += '<div class="result-item">';
+                html += '<h4>🔗 Detected Relationships</h4>';
+                html += '<pre>' + JSON.stringify(data.detected_relationships, null, 2) + '</pre>';
+                html += '</div>';
+            }
+
+            html += '<div class="result-item">';
+            html += '<h4>📈 Statistics</h4>';
+            html += '<div class="stat-item">';
+            html += '<span class="stat-label">Total Records:</span>';
+            html += '<span class="stat-value">' + data.records_count + '</span>';
+            html += '</div>';
+            if (data.file_path) {
+                html += '<div class="stat-item">';
+                html += '<span class="stat-label">Output Location:</span>';
+                html += '<span class="stat-value" style="font-size: 12px;">' + data.file_path + '</span>';
+                html += '</div>';
+            }
+            html += '</div>';
+
+            resultsContent.innerHTML = html;
+        }
+
+        // Show message
+        function showMessage(message, type) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type + '-message';
+            messageDiv.textContent = message;
+            
+            messagesContainer.innerHTML = '';
+            messagesContainer.appendChild(messageDiv);
+
+            if (type !== 'error') {
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 5000);
+            }
+        }
+
+        // Start status checking
+        function startStatusCheck() {
+            statusCheckInterval = setInterval(checkJobStatus, 1000);
+            checkJobStatus();
+        }
+
+        // Stop status checking
+        function stopStatusCheck() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+                statusCheckInterval = null;
+            }
+        }
+
+        // Copy job ID
+        function copyJobId() {
+            navigator.clipboard.writeText(currentJobId);
+            showMessage('Job ID copied to clipboard', 'success');
+        }
+
+        // Cancel job
+        async function cancelJob() {
+            try {
+                const response = await fetch(
+                    `${API_URL}/extraction/jobs/${currentJobId}/cancel`
+                );
+                
+                if (response.ok) {
+                    stopStatusCheck();
+                    currentJobId = null;
+                    updateStatusDisplay();
+                    showMessage('Job cancelled', 'success');
+                }
+            } catch (error) {
+                showMessage('Error cancelling job: ' + error.message, 'error');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatusDisplay();
+        });
+    </script>
+</body>
+</html>
