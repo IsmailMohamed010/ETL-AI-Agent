@@ -1,0 +1,14 @@
+# requirements.txt
+# After: pip install -r requirements.txt
+# Also run: playwright install chromium
+# Also run: ollama pull llama3   (or your chosen --ollama-model)
+
+playwright>=1.40.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+langchain-ollama>=0.1.0
+langchain-core>=0.1.0
+torch>=2.0.0
+transformers>=4.40.0
+langgraph>=0.1.0
+typing-extensions>=4.5.0
